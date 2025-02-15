@@ -9,20 +9,18 @@ import {LoginFormData} from "@/app/auth/login/Types";
 import { Templates } from './Templates';
 import "@/app/auth/auth.css";
 
-
 const {
     IS_ERROR_EMAIL_TEXT,
     IS_ERROR_PASSWORD_TEXT,
     EMAIL_TEXT,
-    PASSWORD_TEXT
+    PASSWORD_TEXT,
+    BUTTON_TEXT,
+    IS_NOT_EXIST_ACCOUNT,
+    REGISTER_LINK_TEXT,
+    ENTER_BUTTON_TEXT,
 }=Templates
 
-
-export default function Login() {
-
-    const onFinish = useCallback((values:LoginFormData) => {
-        console.log(values);
-    }, []);
+export default function LoginForm() {
 
     const [form] = Form.useForm<LoginFormData>();
 
@@ -32,20 +30,23 @@ export default function Login() {
     };
 
     const isErrorEmail=useMemo(()=>{
-        return /^[^\s@]+@[a-zа-я]{2,}\.[a-zа-я]{2,}$/.test(email);
+        return !/^(([^<>()[\].,;:\s@"]+(\.[^<>()[\].,;:\s@"]+)*)|(".+"))@(([^<>()[\].,;:\s@"]+\.)+[^<>()[\].,;:\s@"]{2,})$/iu.test(email);
     },[email]);
+
+    const onFinish = useCallback((values:LoginFormData) => {
+        console.log(values);
+    }, []);
 
     return(
         <>
             <Form className="container" onFinish={onFinish} layout='vertical' form={form}>
                 <Flex vertical gap={10}>
                     <Text className="title_auth">
-                        Войти
+                        {ENTER_BUTTON_TEXT}
                     </Text>
                     <TextField
                         errorText={IS_ERROR_EMAIL_TEXT}
                         name='email'
-                        type='email'
                         label={EMAIL_TEXT}
                         isError={isErrorEmail}
                     />
@@ -54,20 +55,20 @@ export default function Login() {
                         name='password'
                         label={PASSWORD_TEXT}
                         isPassword
-                        isError={password?.length ==0}
+                        isError={password?.length ===0}
                     />
                     <Button
-                        title='Войти'
+                        title={BUTTON_TEXT}
                         type='primary'
                         htmlType='submit'
                         size='large'
                     />
                     <Flex gap={10}>
                         <Text className="text_strong">
-                            У вас нет аккаунта?
+                            {IS_NOT_EXIST_ACCOUNT}
                         </Text>
                         <Link href='/auth/register' className="link_strong">
-                            Зарегистрироваться
+                            {REGISTER_LINK_TEXT}
                         </Link>
                     </Flex>
                 </Flex>

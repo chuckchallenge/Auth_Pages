@@ -1,15 +1,12 @@
 'use client'
-
-import "@ant-design/v5-patch-for-react-19"
 import { Flex, Form, Space } from 'antd';
-import {useCallback, useState, useEffect} from 'react';
+import {useCallback, useState, useMemo} from 'react';
 import Link from 'next/link';
 import TextField from '@/components/Universal/TextField/TextField';
 import Text from '@/components/Universal/Text/Text';
 import Button from '@/components/Universal/Button/Button';
 import {RegisterFormData} from "@/app/auth/register/Types";
 import {Templates} from "@/app/auth/register/Templates";
-
 
 const {
     IS_ERROR_EMAIL_TEXT,
@@ -18,40 +15,43 @@ const {
     IS_ERROR_LASTNAME_TEXT,
     IS_ERROR_FIRSTNAME_TEXT,
     IS_ERROR_FATHERNAME_TEXT,
+    IS_HAVE_ACCOUNT,
     EMAIL_TEXT,
     PASSWORD_TEXT,
+    LASTNAME_TEXT,
+    FIRSTNAME_TEXT,
+    FATHERNAME_TEXT,
     CONFIRM_PASSWORD_TEXT,
+    CREATE_ACCOUNT_TEXT,
+    ENTER_LINK_TEXT,
+    PASSWORD_RULES
 } = Templates
-export default function Register() {
-
-    const onFinish = useCallback((values: RegisterFormData) => {
-        console.log(values)
-    },[]);
+export default function RegisterForm() {
 
     const [form] = Form.useForm<RegisterFormData>();
-    const validatePassword = (password:string) => {
-        const hasMinLength = password.length >= 8;
+
+    const {email, password, confirmPassword, lastName, firstName} = Form.useWatch(({email, password, confirmPassword, lastName, firstName,})=>({email, password, confirmPassword, lastName, firstName}), form)?? {
+        email:'',
+        password:'',
+        confirmPassword:'',
+        lastName:'',
+        firstName:'',
+    };
+
+    const isErrorEmail=useMemo(()=>{
+        return !/^(([^<>()[\].,;:\s@"]+(\.[^<>()[\].,;:\s@"]+)*)|(".+"))@(([^<>()[\].,;:\s@"]+\.)+[^<>()[\].,;:\s@"]{2,})$/iu.test(email);
+    },[email]);
+
+    const isErrorPassword=useMemo(()=>{
+        const hasMinLength = password?.length >= 8;
         const hasUpperLetter = /[A-ZА-Я]/.test(password);
         const hasLowerLetter = /[a-zа-я]/.test(password);
         const hasSpecialCharacter = /[#!\$%&^*_+\|=?,\.\/\\]/.test(password);
-        return hasMinLength && hasUpperLetter && hasUpperLetter && hasLowerLetter && hasSpecialCharacter;
-    };
+        return !(hasMinLength && hasUpperLetter && hasUpperLetter && hasLowerLetter && hasSpecialCharacter);
 
-    const watchedValues = Form.useWatch([], form);
+    },[password]);
 
-    const [isValidEmail, setIsValidEmail] = useState<boolean>(false);
-    const [isValidPassword, setIsValidPassword] = useState<boolean>(false);
-
-    useEffect(() => {
-        setIsValidEmail(/^[^\s@]+@[a-zа-я]{2,}\.[a-zа-я]{2,}$/.test(watchedValues?.email))
-    },[watchedValues?.email]);
-
-    useEffect(() => {
-        if (typeof watchedValues?.password === 'string')
-            setIsValidPassword(validatePassword(watchedValues?.password))
-    },[watchedValues?.password]);
-
-    const [isVisibleSupportTextPassword, setIsVisibleSupportTextPassword] = useState<boolean>(false)
+    const [isVisibleSupportTextPassword, setIsVisibleSupportTextPassword] = useState<boolean>(true);
 
     const handleInputFocus = () => {
         setIsVisibleSupportTextPassword(true);
@@ -61,13 +61,9 @@ export default function Register() {
         setIsVisibleSupportTextPassword(false);
     };
 
-    const isValidForm =
-        watchedValues?.lastName != '' &&
-        watchedValues?.firstName != '' &&
-        watchedValues?.fatherName != '' &&
-        isValidEmail &&
-        isValidPassword &&
-        watchedValues?.password === watchedValues?.confirmPassword;
+    const onFinish = useCallback((values: RegisterFormData) => {
+        console.log(values)
+    },[]);
 
     return(
         <>
@@ -77,49 +73,49 @@ export default function Register() {
                         Зарегистрироваться
                     </Text>
 
-
                     <TextField
                         errorText={IS_ERROR_LASTNAME_TEXT}
                         name='lastName'
-                        label='Фамилия'
+                        label={LASTNAME_TEXT}
+                        isError={lastName?.length==0}
+
                     />
 
                     <TextField
                         errorText={IS_ERROR_FIRSTNAME_TEXT}
                         name='firstName'
-                        label='Имя'
+                        label={FIRSTNAME_TEXT}
+                        isError={firstName?.length==0}
                     />
 
                     <TextField
                         errorText={IS_ERROR_FATHERNAME_TEXT}
                         name='fatherName'
-                        label='Отчество'
+                        label={FATHERNAME_TEXT}
+                        isRequired={false}
                     />
 
                     <TextField
                         errorText={IS_ERROR_EMAIL_TEXT}
                         name='email'
-                        type='email'
                         label={EMAIL_TEXT}
+                        isError={isErrorEmail}
                     />
+
 
                     <TextField
                         errorText={IS_ERROR_STRONGPASSWORD_TEXT}
                         name='password'
                         label={PASSWORD_TEXT}
-                        isPassword
-                        condition={validatePassword}
+                        isError={isErrorPassword}
                         onFocus={handleInputFocus}
                         onBlur={handleInputBlur}
+                        isPassword
                     />
 
                     <Space style={{overflow: 'hidden', height: isVisibleSupportTextPassword ? 115 : 0, transition: 'height 0.5s ease-in-out'}}>
                         <Text className="condition_password">
-                            Пароль должен содержать:<br/>
-                            - Заглавную букву<br/>
-                            - Строчную букву<br/>
-                            - Cпециальный символ (- # ! $ % ^ & * _ + | = ? , . / \)<br/>
-                            - Минимум 8 знаков
+                            {PASSWORD_RULES}
                         </Text>
                     </Space>
 
@@ -127,26 +123,24 @@ export default function Register() {
                         errorText={IS_ERROR_CONFIRMPASSWORD_TEXT}
                         name='confirmPassword'
                         label={CONFIRM_PASSWORD_TEXT}
+                        isError={confirmPassword!=password}
                         isPassword
-                        condition={validatePassword}
-                        status={watchedValues?.password === watchedValues?.confirmPassword ? '' : 'error'}
                     />
 
                     <Button
-                        title='Создать аккаунт'
+                        title={CREATE_ACCOUNT_TEXT}
                         type='primary'
                         htmlType='submit'
                         size='large'
-                        disabled={!isValidForm}
                     />
 
                     <Flex gap={10}>
                         <Text className="text_strong">
-                            Уже есть аккаунт?
+                            {IS_HAVE_ACCOUNT}
                         </Text>
 
                         <Link href='/auth/login' className="link_strong">
-                            Войти
+                            {ENTER_LINK_TEXT}
                         </Link>
                     </Flex>
                 </Flex>
